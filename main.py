@@ -1,38 +1,27 @@
 from fastapi import FastAPI, UploadFile, File, Form
+import asyncio
 from resume_parser import extract_resume_text
-from keyword_extractor import extract_keywords
+from jd_parser import extract_jd_text
 from skill_extractor import extract_skills
+from keyword_extractor import extract_keywords
+from ai_skill_extractor import extract_skills_ai
 from matcher import match_skills
-from ats_score import calculate_ats_score
-from llm_rewriter import rewrite_resume
-
-import PyPDF2
-import docx
-import io
+from ats_score import calculate_advanced_ats_score
+from llm_rewriter import rewrite_resume_sections
 
 app = FastAPI()
 
+cache = {}  # Simple in-memory cache
 
-async def extract_text_from_file(file: UploadFile):
-    content = await file.read()
+def cached_call(key, func, *args):
+    if key in cache:
+        return cache[key]
+    result = func(*args)
+    cache[key] = result
+    return result
 
-    if file.filename.endswith(".pdf"):
-        pdf_reader = PyPDF2.PdfReader(io.BytesIO(content))
-        text = ""
-        for page in pdf_reader.pages:
-            text += page.extract_text()
-        return text
-
-    elif file.filename.endswith(".docx"):
-        doc = docx.Document(io.BytesIO(content))
-        return "\n".join([para.text for para in doc.paragraphs])
-
-    elif file.filename.endswith(".txt"):
-        return content.decode("utf-8")
-
-    else:
-        return None
-
+async def run_in_thread(func, *args):
+    return await asyncio.to_thread(func, *args)
 
 @app.post("/analyze/")
 async def analyze_resume(
@@ -40,47 +29,98 @@ async def analyze_resume(
     job_description: str = Form(None),
     jd_file: UploadFile = File(None)
 ):
-
-    # Extract resume text
+    #Resume Extraction
     resume_text = await extract_resume_text(resume)
-
-    # Decide JD input
+    
+    #JD Extraction
     if job_description:
         jd_text = job_description
-
     elif jd_file:
-        jd_text = await extract_text_from_file(jd_file)
-
+        jd_text = await extract_jd_text(jd_file)
     else:
-        return {"error": "Please provide either job_description text or upload jd_file"}
+        return {"error": "Provide job_description or jd_file"}
+    if not jd_text or len(jd_text.strip()) < 50:
+        return {"error": "JD extraction failed or too short"}
+    print("\n===== JD TEXT =====\n", jd_text[:500], "\n=================\n")
 
-
-    jd_keywords = extract_keywords(jd_text)
-
-    resume_skills = extract_skills(resume_text)
-    jd_skills = extract_skills(jd_text)
-
-    matched_skills, missing_skills = match_skills(resume_skills, jd_skills)
-
-    ats_score = calculate_ats_score(matched_skills, len(jd_skills))
-
-    rewritten_resume = rewrite_resume(
-        resume_text[:500],
-        jd_text[:300]
+    #PARALLEL SKILL EXTRACTION
+    jd_skills_task = run_in_thread(
+        cached_call,
+        jd_text + "_skills",
+        extract_skills_ai,
+        jd_text
     )
+    jd_skill_data = await jd_skills_task
+
+    #Resume Skills
+    resume_skills = extract_skills(resume_text)
+    must_have_skills = jd_skill_data.get("must_have", [])
+    good_to_have_skills = jd_skill_data.get("good_to_have", [])
+    
+    #Keywords(NO LLM)
+    jd_keywords = list(set(must_have_skills + good_to_have_skills))
+    if not jd_keywords:
+        jd_keywords = extract_keywords(jd_text)
+    
+    #Matching
+    all_jd_skills = list(set(must_have_skills + good_to_have_skills))
+    matched_skills, missing_skills = match_skills(
+        resume_skills,
+        all_jd_skills
+    )
+    
+    #ATS BEFORE
+    ats_score_before = calculate_advanced_ats_score(
+        resume_text,
+        must_have_skills,
+        matched_skills
+    )
+
+    #REWRITE resume(AFTER MATCHING)
+    rewritten_resume = await run_in_thread(
+        cached_call,
+        resume_text[:300] + "_rewrite",
+        rewrite_resume_sections,
+        resume_text[:400],
+        jd_text[:300],
+        missing_skills
+    )
+
+    #ATS AFTER
+    updated_resume_skills = extract_skills(rewritten_resume)
+    updated_matched_skills, _ = match_skills(
+        updated_resume_skills,
+        all_jd_skills
+    )
+    raw_ats_after = calculate_advanced_ats_score(
+        rewritten_resume,
+        must_have_skills,
+        updated_matched_skills
+    )
+    max_increase = 20  # cap improvement
+    ats_score_after = min(
+        ats_score_before + max_increase,
+        raw_ats_after,
+        92  # hard upper limit
+    )
+    
+    #Suggestions
     suggestions = [
-    f"Add or improve experience in {skill}"
-    for skill in missing_skills
+        f"Add or improve experience in {skill}"
+        for skill in missing_skills
     ]
 
+    #Final Response
     return {
         "resume_preview": resume_text[:300],
         "jd_keywords": jd_keywords,
         "resume_skills": resume_skills,
-        "jd_skills": jd_skills,
+        "must_have_skills": must_have_skills,
+        "good_to_have_skills": good_to_have_skills,
         "matched_skills": matched_skills,
         "missing_skills": missing_skills,
-        "ats_score": ats_score,
-        "rewritten_resume": rewritten_resume,
-        "suggestions": suggestions
+        "ats_score_before": ats_score_before,
+        "ats_score_after": ats_score_after,
+        "suggestions": suggestions,
+        "rewritten_resume": rewritten_resume
     }
