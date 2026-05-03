@@ -2,26 +2,19 @@ import subprocess
 import json
 import re
 
+
 def extract_keywords_ai(text):
     prompt = f"""
-You are an ATS keyword analyzer.
+Extract 15–20 technical keywords from this job description.
 
-Extract ONLY meaningful technical keywords from this job description.
+ONLY JSON OUTPUT:
+{{ "keywords": [] }}
 
-STRICT RULES:
-- Output ONLY JSON (no explanation, no markdown)
-- Do NOT include generic words like: experience, knowledge, strong
-- Focus ONLY on:
-  - programming languages
-  - frameworks
-  - tools
-  - technologies
-  - technical concepts
-
-Format:
-{{
-  "keywords": ["python", "react", "aws"]
-}}
+Focus on:
+- languages
+- frameworks
+- tools
+- concepts
 
 Job Description:
 {text}
@@ -35,32 +28,34 @@ Job Description:
             encoding="utf-8",
             errors="ignore"
         )
+
         output = result.stdout.strip()
-        print("\n--- RAW KEYWORD LLM OUTPUT ---\n", output, "\n")
+
         match = re.search(r"\{[\s\S]*\}", output)
+
         if match:
-            try:
-                data = json.loads(match.group(0))
-                keywords = data.get("keywords", [])
-                cleaned = [
-                    k.lower().strip()
-                    for k in keywords
-                    if isinstance(k, str) and len(k.strip()) > 2
-                ]
-                return list(set(cleaned))
-            except Exception as e:
-                print("Keyword JSON parsing failed:", e)
-        words = re.findall(r"\b[a-zA-Z\+\#\.]{3,}\b", output.lower())
-        blacklist = {
-            "and", "the", "with", "for", "this", "that",
-            "keywords", "output", "json", "only",
-            "extract", "meaningful"
-        }
-        filtered = [
-            w for w in words
-            if w not in blacklist and len(w) > 2
-        ]
-        return list(set(filtered[:10]))
+            data = json.loads(match.group(0))
+            keywords = data.get("keywords", [])
+
+            cleaned = []
+            for k in keywords:
+                if isinstance(k, str):
+                    k = k.lower().strip()
+
+                    # normalize
+                    k = k.replace("node.js", "node")
+                    k = k.replace("express.js", "express")
+                    k = k.replace("react.js", "react")
+                    k = k.replace("restapi", "rest api")
+
+                    if len(k) > 2:
+                        cleaned.append(k)
+
+            # remove duplicates
+            return list(dict.fromkeys(cleaned))[:18]
+
+        return []
+
     except Exception as e:
         print("Keyword Extract Error:", e)
         return []

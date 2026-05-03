@@ -1,7 +1,11 @@
 import subprocess
 import re
 
+
 def rewrite_resume_sections(resume_text, jd_text, missing_skills):
+
+    missing_skills = missing_skills[:5]
+
     prompt = f"""
 You are an expert ATS resume optimizer.
 
@@ -11,17 +15,26 @@ Rewrite ONLY:
 3. Projects Section
 
 STRICT RULES:
-- Do NOT add fake experience or specific tools not present in resume
-- You MAY include missing skills ONLY as:
-  - "familiar with", "exposure to", or "basic knowledge of"
-- Do NOT claim production experience for missing skills
-- Keep it realistic for a student profile
-- Keep professional tone
-- Do NOT include job description
-- Do NOT add new sections
+- DO NOT add fake projects or fake experience
+- DO NOT invent companies or achievements
+- DO NOT include job description
+- DO NOT add new sections
 
-Missing Skills to consider:
+IMPORTANT:
+- Include missing skills naturally:
 {missing_skills}
+
+- Only use phrases:
+  "familiar with", "basic knowledge of", "exposure to"
+
+- DO NOT mention Node.js or Express.js unless clearly present in resume
+
+- Skills must appear clearly in Skills section
+
+OUTPUT:
+- Clean text
+- No markdown
+- No repetition
 
 Resume:
 {resume_text}
@@ -38,22 +51,17 @@ Job Description:
             encoding="utf-8",
             errors="ignore"
         )
+
         output = result.stdout.strip()
-        print("\n--- RAW LLM REWRITE OUTPUT ---\n", output, "\n")
 
-        #Remove escape characters
-        
         cleaned = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', output)
+        cleaned = re.sub(r'\*+', '', cleaned)
+        cleaned = re.sub(r'\n{2,}', '\n', cleaned)
+        cleaned = re.sub(r'\s{2,}', ' ', cleaned)
+        cleaned = re.sub(r'[^\x00-\x7F]+', '', cleaned)
 
-        #Normalize spacing
-        
-        cleaned = re.sub(r'\n+', '\n', cleaned)
+        return cleaned.strip() if len(cleaned) > 50 else "Rewrite failed"
 
-        #Fallback safety
-        
-        if not cleaned or len(cleaned) < 20:
-            return "Resume rewrite could not be generated properly."
-        return cleaned.strip()
     except Exception as e:
         print("LLM Error:", e)
         return "LLM processing failed"
