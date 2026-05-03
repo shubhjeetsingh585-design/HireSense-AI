@@ -14,11 +14,18 @@ from ats_score import calculate_advanced_ats_score
 from llm_rewriter import rewrite_resume_sections
 
 from visualizer import create_ats_bar_chart, create_pie_chart
-
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
 cache = {}
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],   # allow all (for development)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def cached_call(key, func, *args):
     if key in cache:
