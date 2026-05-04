@@ -1,28 +1,22 @@
 import subprocess
 import json
 import re
-
 def extract_skills_ai(text):
     prompt = f"""
 Extract skills from this job description.
-
 Return ONLY valid JSON.
-
 STRICT FORMAT:
 {{
   "must_have": ["skill1", "skill2"],
   "good_to_have": ["skill3", "skill4"]
 }}
-
 RULES:
 - No explanation
 - No text outside JSON
 - Must include at least 3 skills in each list
-
 Job Description:
 {text}
 """
-
     try:
         result = subprocess.run(
             ["ollama", "run", "mistral"],

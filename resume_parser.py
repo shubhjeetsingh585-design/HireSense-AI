@@ -25,10 +25,10 @@ async def extract_resume_text(file):
             print("Resume DOCX extraction error:", e)
             return ""
     return ""
+
 def clean_text(text):
     if not text:
         return ""
-
     # Remove extra spaces & newlines
     text = text.replace("\n", " ")
     text = " ".join(text.split())

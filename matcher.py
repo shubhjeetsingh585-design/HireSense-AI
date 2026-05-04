@@ -1,6 +1,6 @@
 def normalize_skill(skill):
-    skill = skill.lower().strip()
 
+    skill = skill.lower().strip()
     mapping = {
         "nodejs": "node",
         "node.js": "node",
@@ -16,18 +16,14 @@ def normalize_skill(skill):
         "pipelines": "ci/cd",
         "containerization": "docker"
     }
-
     return mapping.get(skill, skill)
-
 
 def match_skills(resume_skills, jd_skills):
 
     resume_set = set(normalize_skill(s) for s in resume_skills)
     jd_set = set(normalize_skill(s) for s in jd_skills)
-
     matched = []
     missing = []
-
     for jd in jd_set:
         found = False
         for r in resume_set:
@@ -37,10 +33,8 @@ def match_skills(resume_skills, jd_skills):
             if jd in r or r in jd:
                 found = True
                 break
-
         if found:
             matched.append(jd)
         else:
             missing.append(jd)
-
     return list(set(matched)), list(set(missing))

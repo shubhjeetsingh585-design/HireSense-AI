@@ -11,7 +11,7 @@ export default function Home() {
       backgroundPosition: "center",
       display: "flex",
       flexDirection: "column",
-      justifyContent: "flex-start",   // 👈 move content up
+      justifyContent: "flex-start",   
       alignItems: "center",
       paddingTop: "120px",
       color: "white",
