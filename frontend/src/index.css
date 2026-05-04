@@ -8,7 +8,7 @@
 
   background: linear-gradient(90deg, #e2e8f0, #38bdf8, #e2e8f0);
   background-size: 200%;
-  -webkit-background-clip: text;
+  /* -webkit-background-clip: text; */
   -webkit-text-fill-color: transparent;
 
   opacity: 0;
@@ -35,9 +35,9 @@
   /* Gradient text */
   background: linear-gradient(90deg, #38bdf8, #22c55e, #38bdf8);
   background-size: 200%;
-  -webkit-background-clip: text;
+  /* -webkit-background-clip: text; */
   -webkit-text-fill-color: transparent;
-
+  
   /* Animations */
   opacity: 0;
   transform: translateY(-40px);
@@ -123,8 +123,8 @@
   /* Gradient */
   background: linear-gradient(90deg, #38bdf8, #22c55e, #38bdf8);
   background-size: 200%;
-
-  -webkit-background-clip: text;
+/* 
+  -webkit-background-clip: text; */
   -webkit-text-fill-color: transparent;
 
   /* Animation */
@@ -325,7 +325,7 @@ font-family: "Segoe UI", sans-serif;
   margin-bottom: 30px;
 
   background: linear-gradient(90deg, #38bdf8, #22c55e);
-  -webkit-background-clip: text;
+  /* -webkit-background-clip: text; */
   -webkit-text-fill-color: transparent;
 }
 
