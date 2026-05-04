@@ -1,6 +1,5 @@
 import { useLocation } from "react-router-dom";
 import { Pie, Bar } from "react-chartjs-2";
-
 import {
   Chart as ChartJS,
   ArcElement,
@@ -19,28 +18,22 @@ ChartJS.register(
   LinearScale,
   BarElement
 );
-
 export default function Results() {
-  const location = useLocation();
-  const data = location.state;
 
-  if (!data) return <h2>No data available</h2>;
-
-  const matched = data.matched_skills || [];
-  const missing = data.missing_skills || [];
- const resumeSkills = (data.resume_skills || []);
+const location = useLocation();
+const data = location.state;
+if (!data) return <h2>No data available</h2>;
+const matched = data.matched_skills || [];
+const missing = data.missing_skills || [];
+const resumeSkills = (data.resume_skills || []);
 const jdSkills = (data.jd_keywords || []);
-
  return (
   <div className="results-page">
-
     <h1 className="results-title">Analysis Results</h1>
-
     {/* ATS Score */}
     <div className="card">
       <h2>ATS Score: {data.ats_score_after}</h2>
     </div>
-
     {/* Bar Chart */}
     <div className="card chart-card">
       <Bar
@@ -67,10 +60,8 @@ const jdSkills = (data.jd_keywords || []);
         }}
       />
     </div>
-
     {/* Skills */}
     <div className="grid-2">
-
       <div className="card">
         <h3 style={{ color: "#22c55e" }}>Matched Skills</h3>
         <ul>
@@ -79,7 +70,6 @@ const jdSkills = (data.jd_keywords || []);
           ))}
         </ul>
       </div>
-
       <div className="card">
         <h3 style={{ color: "#ef4444" }}>Missing Skills</h3>
         <ul>
@@ -88,9 +78,7 @@ const jdSkills = (data.jd_keywords || []);
           ))}
         </ul>
       </div>
-
     </div>
-
     {/* Pie Chart */}
     <div className="card chart-card">
          <h3>Skill Match</h3>
@@ -106,10 +94,8 @@ const jdSkills = (data.jd_keywords || []);
       />
       </div>
     </div>
-
     {/* Resume vs JD */}
     <div className="grid-2">
-
       <div className="card chart-card">
         <h3>Resume Skills</h3>
         <div className="chart-center">
@@ -127,7 +113,6 @@ const jdSkills = (data.jd_keywords || []);
         />
         </div>
       </div>
-
       <div className="card chart-card">
         <h3>JD Skills</h3>
         <div className="chart-center">
@@ -145,9 +130,7 @@ const jdSkills = (data.jd_keywords || []);
         />
         </div>
       </div>
-
     </div>
-
     {/* Suggestions */}
     <div className="card">
       <h3>Suggestions</h3>
@@ -157,13 +140,11 @@ const jdSkills = (data.jd_keywords || []);
         ))}
       </ul>
     </div>
-
     {/* Resume */}
     <div className="card">
       <h3>Rewritten Resume</h3>
       <p>{data.rewritten_resume}</p>
     </div>
-
   </div>
 );
 }

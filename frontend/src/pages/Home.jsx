@@ -49,7 +49,6 @@ export default function Home() {
 </button>
 
       </div>
-
       {/* Animation */}
       <style>
         {`
